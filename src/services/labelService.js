@@ -87,7 +87,8 @@ function groupItemsByBox(items, resetBoxPerDo = false) {
  * @property {number}   boxNo
  * @property {string}   customerName
  * @property {string}   checkerName
- * @property {string}   headerText      e.g. "SUTORANG / NO BOX 1"
+ * @property {string}   noDo            e.g. "5993" or null
+ * @property {string}   headerText      e.g. "SUTORANG , NO BOX 1"
  * @property {number}   weightKg        per-box weight
  * @property {Object[]} lineItems       array of { code, description, qtyInBox }
  */
@@ -118,12 +119,13 @@ function buildLabels(dbItems, customerName, checkerName, resetBoxPerDo = false) 
     for (let pageIdx = 0; pageIdx < pageCount; pageIdx++) {
       const pageEntries = entries.slice(pageIdx * ITEMS_PER_LABEL, (pageIdx + 1) * ITEMS_PER_LABEL);
       const partSuffix = pageCount > 1 ? ` (${pageIdx + 1}/${pageCount})` : '';
-      const headerText = noDo
-        ? `${customerName.toUpperCase()} / NO DO : ${noDo} / NO BOX : ${boxNo}${partSuffix}`
-        : `${customerName.toUpperCase()} / NO BOX ${boxNo}${partSuffix}`;
+      // Header: pakai "," sebagai pemisah customer dan NO BOX (bukan "/")
+      // Format dengan NO DO: header tetap "CUSTOMER , NO BOX Y", footer tampilkan NO DO/BOX info
+      const headerText = `${customerName.toUpperCase()} , NO BOX ${boxNo}${partSuffix}`;
 
       labels.push({
         boxNo,
+        noDo: noDo || null,
         customerName: customerName.toUpperCase(),
         checkerName,
         headerText,

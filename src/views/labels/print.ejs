@@ -198,8 +198,21 @@
     /* Footer */
     .label-footer {
       border-top: 2.5px solid #111;
-      padding: 6px 10px;
+      padding: 5px 10px;
       background: whitesmoke;
+      display: flex;
+      flex-direction: column;
+      gap: 3px;
+    }
+
+    .label-footer .no-do-box {
+      font-size: 9px;
+      font-weight: 700;
+      color: #000;
+      text-transform: uppercase;
+    }
+
+    .label-footer .footer-row {
       display: flex;
       align-items: center;
       justify-content: space-between;
@@ -277,6 +290,10 @@
 
       .label-body table .col-qty {
         font-size: 8pt;
+      }
+
+      .label-footer .no-do-box {
+        font-size: 7pt;
       }
 
       .label-footer .check-by {
@@ -358,10 +375,15 @@
           </table>
         </div>
 
-        <!-- FOOTER: CHECK BY + WEIGHT -->
+        <!-- FOOTER: NO DO/BOX (jika ada) + CHECK BY + WEIGHT -->
         <div class="label-footer">
-          <span class="check-by">CHECK BY : <%= label.checkerName.toUpperCase() %> ,&nbsp; <%= printDate %></span>
-          <span class="weight">Weight <%= parseFloat(label.weightKg).toFixed(0) %> kgs</span>
+          <% if (label.noDo) { %>
+            <span class="no-do-box">NO DO / BOX : <%= label.noDo %> / <%= label.boxNo %></span>
+          <% } %>
+          <div class="footer-row">
+            <span class="check-by">CHECK BY : <%= label.checkerName.toUpperCase() %> ,&nbsp; <%= printDate %></span>
+            <span class="weight">Weight <%= parseFloat(label.weightKg).toFixed(0) %> kgs</span>
+          </div>
         </div>
 
       </div>

@@ -14,7 +14,8 @@ const EXPECTED_HEADERS = {
   description: ['desc', 'description'],
   qty:         ['qty', 'quantity'],
   noDo:        ['no do', 'no.do', 'no_do', 'nodo'],
-  noBox:       ['no box', 'no.box', 'no_box', 'nobox'],
+  // 'box' adalah exact-only alias untuk format 3 (kolom "BOX" terpisah)
+  noBox:       ['no box', 'no.box', 'no_box', 'nobox', 'box'],
   qtyOfBox:    ['qty of box', 'qty_of_box', 'qtyofbox', 'qty box'],
   pCm:         ['p(cm)', 'p (cm)', 'p cm'],
   lCm:         ['l(cm)', 'l (cm)', 'l cm'],
@@ -80,7 +81,14 @@ function findHeaderRow(worksheet) {
 
       for (const [field, aliases] of Object.entries(EXPECTED_HEADERS)) {
         if (field === 'weightKg' || field === 'totalWeight') continue; // handled below
-        if (aliases.some(alias => text === alias || text.includes(alias))) {
+        if (aliases.some(alias => {
+          // Single-word alias (no space/dot): exact match only to avoid false positives
+          // e.g. alias 'box' should NOT match 'no box' or 'qty of box'
+          if (!alias.includes(' ') && !alias.includes('.') && !alias.includes('(')) {
+            return text === alias;
+          }
+          return text === alias || text.includes(alias);
+        })) {
           if (!colMap[field]) {
             colMap[field] = colNumber;
           }
