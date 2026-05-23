@@ -121,40 +121,25 @@ function buildLabels(items, customerName, checkerName, resetBoxPerDo = false, se
   const labels = [];
   const ITEMS_PER_LABEL = 15;
 
-  // Detect or use selected format
-  const hasNoDo = items.some(item => item.noDo !== null && item.noDo !== undefined && item.noDo !== '');
-  
-  let format = 'format1';
-  if (hasNoDo) {
-    if (selectedFormat === 'format2') {
-      format = 'format2';
-    } else if (selectedFormat === 'format3') {
-      format = 'format3';
-    } else {
-      // Auto-detect Format 2 vs Format 3 by checking if box numbers reset per-DO
-      let isResetting = false;
-      let maxBox = 0;
-      let lastNoDo = null;
-      
-      for (const item of items) {
-        if (!item.noDo) continue;
-        const boxes = parseBoxRange(item.noBoxRaw);
-        for (const b of boxes) {
-          if (lastNoDo && lastNoDo !== item.noDo) {
-            // If the box number resets to 1, or is smaller than the max seen, it resets!
-            if (b <= maxBox && b === 1) {
-              isResetting = true;
-              break;
-            }
-          }
-          lastNoDo = item.noDo;
-          maxBox = Math.max(maxBox, b);
-        }
-        if (isResetting) break;
-      }
-      
-      format = isResetting ? 'format3' : 'format2';
-    }
+  // Detect or use selected format based on which columns are present:
+  //   Format 1 → only NO BOX column (no NO DO)
+  //   Format 2 → NO DO + BOX or NO BOX column (but NOT both BOX AND NO BOX)
+  //   Format 3 → NO DO + BOX column + NO BOX column (separate per-DO and global seq)
+  const hasNoDo     = items.some(item => item.noDo    !== null && item.noDo    !== undefined && item.noDo    !== '');
+  const hasBoxCol   = items.some(item => item.boxRaw   !== null && item.boxRaw   !== undefined && item.boxRaw   !== '');
+  const hasNoBoxCol = items.some(item => item.noBoxRaw !== null && item.noBoxRaw !== undefined && item.noBoxRaw !== '');
+
+  let format;
+  if (selectedFormat && selectedFormat !== 'auto') {
+    format = selectedFormat;
+  } else if (!hasNoDo) {
+    format = 'format1';
+  } else if (hasBoxCol && hasNoBoxCol) {
+    // Both BOX (per-DO) and NO BOX (global seq) columns → Format 3
+    format = 'format3';
+  } else {
+    // Only one box-numbering column + NO DO → Format 2
+    format = 'format2';
   }
 
   let globalBoxSeq = 1;
@@ -190,8 +175,8 @@ function buildLabels(items, customerName, checkerName, resetBoxPerDo = false, se
         headerText = `${customerName.toUpperCase()} , NO BOX ${globalBoxSeq}${partSuffix}`;
         labelNoDo = noDo || null;
       } else if (format === 'format2') {
-        // Format 2: Header contains DO and BOX
-        headerText = `${customerName.toUpperCase()} , NO DO/BOX : ${noDo || ''}/${boxNo}${partSuffix}`;
+        // Format 2: Header → CUSTOMER , NO DO / BOX : {DO} / {box}
+        headerText = `${customerName.toUpperCase()} , NO DO / BOX : ${noDo || ''} / ${boxNo}${partSuffix}`;
       } else {
         // Format 1: Header contains CUSTOMER, NO BOX boxNo
         headerText = `${customerName.toUpperCase()} , NO BOX ${boxNo}${partSuffix}`;
