@@ -1,0 +1,359 @@
+<!DOCTYPE html>
+<html lang="en" class="h-full">
+
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>
+    <%= title %>
+  </title>
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap"
+    rel="stylesheet" />
+  <link rel="stylesheet" href="/css/styles.css" />
+</head>
+
+<body class="min-h-full bg-surface-950 text-slate-100">
+
+  <%- include('../partials/navbar', { activePage: 'packing-lists' }) %>
+
+    <main class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-10">
+
+      <!-- Breadcrumb -->
+      <nav class="flex items-center gap-2 text-sm text-slate-500 mb-6">
+        <a href="/packing-lists" class="hover:text-slate-300 transition-colors">Packing Lists</a>
+        <svg class="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+          <path stroke-linecap="round" stroke-linejoin="round" d="M9 5l7 7-7 7" />
+        </svg>
+        <span class="text-slate-400 truncate max-w-xs">
+          <%= list.original_name || list.filename %>
+        </span>
+      </nav>
+
+      <%- include('../partials/flash') %>
+
+        <!-- Header -->
+        <div class="flex flex-col sm:flex-row sm:items-start justify-between gap-4 mb-8">
+          <div>
+            <h1 class="page-title truncate max-w-2xl">
+              <%= list.original_name || list.filename %>
+            </h1>
+            <div class="flex items-center gap-3 mt-2">
+              <span class="badge badge-brand">
+                <%= items.length %>
+                  <%= __('pl_status_items') %>
+              </span>
+              <% const uploadedDate=new Date(list.uploaded_at).toLocaleString('en-GB', { dateStyle: 'medium' ,
+                timeStyle: 'short' }); const uploadInfo=__('dl_uploaded_by', list.uploaded_by_name, uploadedDate); %>
+                <span class="text-slate-500 text-xs">
+                  <%= uploadInfo %>
+                </span>
+            </div>
+          </div>
+          <div class="flex items-center gap-2 flex-shrink-0">
+            <button type="button" id="printBtn" class="btn btn-success" onclick="openPrintModal()">
+              <svg class="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+                <path stroke-linecap="round" stroke-linejoin="round"
+                  d="M17 17h2a2 2 0 002-2v-4a2 2 0 00-2-2H5a2 2 0 00-2 2v4a2 2 0 002 2h2m2 4h6a2 2 0 002-2v-4a2 2 0 00-2-2H9a2 2 0 00-2 2v4a2 2 0 002 2zm8-12V5a2 2 0 00-2-2H9a2 2 0 00-2 2v4h10z" />
+              </svg>
+              <%= __('dl_btn_print') %>
+            </button>
+            <% const deleteConfirmMsg=__("dl_confirm_delete"); %>
+              <form action="/packing-lists/<%= list.id %>/delete" method="POST"
+                onsubmit="return confirm('<%= deleteConfirmMsg %>')">
+                <button type="submit" id="deleteBtn" class="btn btn-danger btn-sm">
+                  <svg class="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+                    <path stroke-linecap="round" stroke-linejoin="round"
+                      d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
+                  </svg>
+                  <%= __('dl_btn_delete') %>
+                </button>
+              </form>
+          </div>
+        </div>
+
+        <!-- Items Table -->
+        <% const hasNoDo = items.some(item => item.no_do); %>
+        <div class="card overflow-hidden mb-8 animate-slide-up">
+          <div class="card-header flex items-center justify-between">
+            <h2 class="font-semibold text-slate-200 flex items-center gap-2">
+              <svg class="w-4 h-4 text-brand-400" fill="none" viewBox="0 0 24 24" stroke="currentColor"
+                stroke-width="2">
+                <path stroke-linecap="round" stroke-linejoin="round" d="M4 6h16M4 10h16M4 14h16M4 18h16" />
+              </svg>
+              <%= __('dl_items_title') %>
+            </h2>
+            <span class="badge badge-brand">
+              <%= items.length %> rows
+            </span>
+          </div>
+          <div class="overflow-x-auto">
+            <table class="table-base" id="itemsTable">
+              <thead>
+                <tr>
+                  <th>#</th>
+                  <th>
+                    <%= __('dl_col_code') %>
+                  </th>
+                  <th>
+                    <%= __('dl_col_desc') %>
+                  </th>
+                  <th class="text-right">
+                    <%= __('dl_col_qty') %>
+                  </th>
+                  <% if (hasNoDo) { %>
+                  <th>
+                    <%= __('dl_col_nodo') %>
+                  </th>
+                  <% } %>
+                  <th>
+                    <%= __('dl_col_nobox') %>
+                  </th>
+                  <th>
+                    <%= __('dl_col_qtybox') %>
+                  </th>
+                  <th>
+                    <%= __('dl_col_dims') %>
+                  </th>
+                  <th class="text-right">
+                    <%= __('dl_col_weight') %>
+                  </th>
+                </tr>
+              </thead>
+              <tbody>
+                <% items.forEach(function(item, idx) { %>
+                  <tr>
+                    <td class="font-mono text-slate-500 text-xs">
+                      <%= idx + 1 %>
+                    </td>
+                    <td>
+                      <span
+                        class="font-mono text-xs text-brand-300 bg-brand-900/20 px-2 py-0.5 rounded-full border border-brand-800/30">
+                        <%= item.code %>
+                      </span>
+                    </td>
+                    <td class="max-w-xs">
+                      <span class="text-slate-300 text-sm">
+                        <%= item.description %>
+                      </span>
+                    </td>
+                    <td class="text-right font-semibold text-slate-200">
+                      <%= item.qty %>
+                    </td>
+                    <% if (hasNoDo) { %>
+                    <td>
+                      <span class="font-mono text-xs text-indigo-300 bg-indigo-900/20 px-2.5 py-1 rounded-md border border-indigo-800/30">
+                        <%= item.no_do || '—' %>
+                      </span>
+                    </td>
+                    <% } %>
+                    <td>
+                      <span class="badge badge-warning font-mono">
+                        <%= item.no_box_raw || '—' %>
+                      </span>
+                    </td>
+                    <td class="text-slate-400 text-sm">
+                      <%= item.qty_of_box %>
+                    </td>
+                    <td class="text-slate-400 text-sm font-mono text-xs">
+                      <% if (item.p_cm || item.l_cm || item.t_cm) { %>
+                        <%= item.p_cm %> × <%= item.l_cm %> × <%= item.t_cm %>
+                              <% } else { %>—<% } %>
+                    </td>
+                    <td class="text-right text-slate-300">
+                      <% if (item.weight_kg) { %>
+                        <span class="font-medium">
+                          <%= parseFloat(item.weight_kg).toFixed(1) %>
+                        </span>
+                        <span class="text-slate-500 text-xs">kg</span>
+                        <% } else { %>—<% } %>
+                    </td>
+                  </tr>
+                  <% }) %>
+              </tbody>
+            </table>
+          </div>
+        </div>
+
+        <!-- Print History -->
+        <% if (history && history.length> 0) { %>
+          <div class="card overflow-hidden animate-slide-up">
+            <div class="card-header flex items-center justify-between">
+              <h2 class="font-semibold text-slate-200 flex items-center gap-2">
+                <svg class="w-4 h-4 text-emerald-400" fill="none" viewBox="0 0 24 24" stroke="currentColor"
+                  stroke-width="2">
+                  <path stroke-linecap="round" stroke-linejoin="round"
+                    d="M17 17h2a2 2 0 002-2v-4a2 2 0 00-2-2H5a2 2 0 00-2 2v4a2 2 0 002 2h2m2 4h6a2 2 0 002-2v-4a2 2 0 00-2-2H9a2 2 0 00-2 2v4a2 2 0 002 2zm8-12V5a2 2 0 00-2-2H9a2 2 0 00-2 2v4h10z" />
+                </svg>
+                <%= __('dl_history_title') %>
+              </h2>
+              <span class="badge badge-success">
+                <%= history.length %>
+                  <%= __('pl_status_prints') %>
+              </span>
+            </div>
+            <div class="overflow-x-auto">
+              <table class="table-base" id="historyTable">
+                <thead>
+                  <tr>
+                    <th>#</th>
+                    <th>
+                      <%= __('dl_hist_col_cust') %>
+                    </th>
+                    <th>
+                      <%= __('dl_hist_col_checker') %>
+                    </th>
+                    <th>
+                      <%= __('dl_hist_col_date') %>
+                    </th>
+                    <th class="text-right">
+                      <%= __('dl_hist_col_reprint') %>
+                    </th>
+                  </tr>
+                </thead>
+                <tbody>
+                  <% history.forEach(function(h, idx) { %>
+                    <tr>
+                      <td class="font-mono text-slate-500 text-xs">
+                        <%= idx + 1 %>
+                      </td>
+                      <td class="font-semibold text-slate-200">
+                        <%= h.customer_name %>
+                      </td>
+                      <td class="text-slate-400">
+                        <%= h.checker_name %>
+                      </td>
+                      <td class="text-slate-400 text-xs">
+                        <% const printedDate=new Date(h.printed_at).toLocaleString('en-GB', { dateStyle: 'medium' ,
+                          timeStyle: 'short' }); %>
+                          <%= printedDate %>
+                      </td>
+                      <td class="text-right">
+                        <a href="/labels/<%= h.id %>/print" id="reprintBtn<%= h.id %>" target="_blank"
+                          class="btn btn-secondary btn-sm">
+                          <svg class="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor"
+                            stroke-width="2">
+                            <path stroke-linecap="round" stroke-linejoin="round"
+                              d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" />
+                          </svg>
+                          <%= __('dl_hist_col_reprint') %>
+                        </a>
+                      </td>
+                    </tr>
+                    <% }) %>
+                </tbody>
+              </table>
+            </div>
+          </div>
+          <% } %>
+
+    </main>
+
+    <!-- Print Modal -->
+    <div id="printModal"
+      style="display:none;position:fixed;inset:0;z-index:9999;background:rgba(0,0,0,0.65);backdrop-filter:blur(4px);"
+      onclick="closePrintModal(event)">
+      <div
+        style="position:absolute;top:50%;left:50%;transform:translate(-50%,-50%);background:#0f172a;border:1px solid rgba(51,65,85,0.6);border-radius:16px;padding:28px;min-width:340px;max-width:440px;width:90%;"
+        onclick="event.stopPropagation()">
+        <div style="display:flex;align-items:center;gap:10px;margin-bottom:20px;">
+          <div
+            style="width:36px;height:36px;border-radius:10px;background:linear-gradient(135deg,#0d9488,#0f766e);display:flex;align-items:center;justify-content:center;flex-shrink:0;">
+            <svg style="width:18px;height:18px;" fill="none" viewBox="0 0 24 24" stroke="white" stroke-width="2">
+              <path stroke-linecap="round" stroke-linejoin="round"
+                d="M17 17h2a2 2 0 002-2v-4a2 2 0 00-2-2H5a2 2 0 00-2 2v4a2 2 0 002 2h2m2 4h6a2 2 0 002-2v-4a2 2 0 00-2-2H9a2 2 0 00-2 2v4a2 2 0 002 2zm8-12V5a2 2 0 00-2-2H9a2 2 0 00-2 2v4h10z" />
+            </svg>
+          </div>
+          <div>
+            <h3 style="font-size:1rem;font-weight:700;color:#f1f5f9;margin:0;">
+              <%= __('pl_modal_title') %>
+            </h3>
+            <p style="font-size:0.75rem;color:#64748b;margin:0;">
+              <%= items.length %>
+                <%= __('pl_status_items') %> &nbsp;•&nbsp; <%= list.original_name || list.filename %>
+            </p>
+          </div>
+          <button onclick="closePrintModal()"
+            style="margin-left:auto;background:none;border:none;color:#64748b;cursor:pointer;padding:4px;"
+            onmouseover="this.style.color='#e2e8f0'" onmouseout="this.style.color='#64748b'">
+            <svg style="width:18px;height:18px;" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+              <path stroke-linecap="round" stroke-linejoin="round" d="M6 18L18 6M6 6l12 12" />
+            </svg>
+          </button>
+        </div>
+
+        <form id="printForm" action="/packing-lists/<%= list.id %>/print" method="POST">
+          <label
+            style="display:block;font-size:0.75rem;font-weight:700;color:#94a3b8;margin-bottom:6px;letter-spacing:0.05em;text-transform:uppercase;">
+            <%= __('pl_modal_cust_name') %>
+          </label>
+          <input id="customerNameInput" type="text" name="customerName" placeholder="e.g. PT. Sutorang Jaya"
+            autocomplete="off" required
+            style="width:100%;padding:10px 14px;background:#020617;border:1px solid #334155;border-radius:10px;color:#f1f5f9;font-size:0.9rem;outline:none;box-sizing:border-box;"
+            onfocus="this.style.borderColor='#14b8a6'" onblur="this.style.borderColor='#334155'" />
+          <p style="font-size:0.72rem;color:#475569;margin:6px 0 20px;">
+            <%= __('pl_modal_cust_desc') %>
+          </p>
+          
+          <% if (hasNoDo) { %>
+          <div style="margin-bottom: 24px; display: flex; align-items: flex-start; gap: 10px;">
+            <input type="checkbox" id="resetBoxPerDoInput" name="resetBoxPerDo" value="true"
+              style="margin-top: 4px; width: 16px; height: 16px; accent-color: #14b8a6; cursor: pointer;" checked />
+            <div style="display: flex; flex-direction: column; gap: 2px;">
+              <label for="resetBoxPerDoInput" style="font-size: 0.85rem; font-weight: 600; color: #e2e8f0; cursor: pointer;">
+                <%= __('pl_modal_reset_box') %>
+              </label>
+              <p style="font-size: 0.72rem; color: #64748b; margin: 0;">
+                <%= __('pl_modal_reset_box_desc') %>
+              </p>
+            </div>
+          </div>
+          <% } %>
+
+          <div style="display:flex;gap:10px;">
+            <button type="button" onclick="closePrintModal()"
+              style="flex:1;padding:10px;background:#1e293b;border:1px solid #334155;color:#94a3b8;border-radius:9999px;font-size:0.875rem;cursor:pointer;">
+              <%= __('pl_modal_btn_cancel') %>
+            </button>
+            <button type="submit" id="printSubmitBtn"
+              style="flex:2;padding:10px;background:linear-gradient(135deg,#0d9488,#0f766e);border:none;color:white;border-radius:9999px;font-size:0.875rem;font-weight:600;cursor:pointer;">
+              <%= __('pl_modal_btn_submit') %>
+            </button>
+          </div>
+        </form>
+      </div>
+    </div>
+
+    <footer class="border-t border-surface-700/30 py-4 mt-8">
+      <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+        <p class="text-xs text-slate-600 text-center">PrintLabel &copy; <%= new Date().getFullYear() %>
+        </p>
+      </div>
+    </footer>
+
+    <script src="/js/app.js"></script>
+    <script>
+      function openPrintModal() {
+        document.getElementById('printModal').style.display = 'block';
+        setTimeout(function () { document.getElementById('customerNameInput').focus(); }, 50);
+      }
+      function closePrintModal(e) {
+        if (!e || e.target === document.getElementById('printModal')) {
+          document.getElementById('printModal').style.display = 'none';
+          document.getElementById('customerNameInput').value = '';
+        }
+      }
+      document.getElementById('printForm').addEventListener('submit', function () {
+        var btn = document.getElementById('printSubmitBtn');
+        btn.disabled = true;
+        btn.style.opacity = '0.6';
+        btn.textContent = '<%= __('pl_modal_btn_loading') %>';
+      });
+      document.addEventListener('keydown', function (e) {
+        if (e.key === 'Escape') closePrintModal();
+      });
+    </script>
+</body>
+
+</html>

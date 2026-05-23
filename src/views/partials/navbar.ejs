@@ -1,0 +1,57 @@
+<%
+const active = typeof activePage !== 'undefined' ? activePage : '';
+%>
+<header class="sticky top-0 z-50 bg-surface-900/90 backdrop-blur-xl border-b border-surface-700/40 shadow-xl shadow-black/20">
+  <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+    <div class="flex items-center justify-between h-16">
+
+      <!-- Logo -->
+      <a href="/packing-lists" class="flex items-center gap-2.5 group">
+        <div class="w-8 h-8 rounded-xl bg-gradient-to-br from-brand-500 to-brand-700 flex items-center justify-center shadow-lg shadow-brand-900/40 group-hover:shadow-brand-900/60 transition-shadow">
+          <svg class="w-4.5 h-4.5 text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2.5">
+            <path stroke-linecap="round" stroke-linejoin="round" d="M17 17h2a2 2 0 002-2v-4a2 2 0 00-2-2H5a2 2 0 00-2 2v4a2 2 0 002 2h2m2 4h6a2 2 0 002-2v-4a2 2 0 00-2-2H9a2 2 0 00-2 2v4a2 2 0 002 2zm8-12V5a2 2 0 00-2-2H9a2 2 0 00-2 2v4h10z" />
+          </svg>
+        </div>
+        <span class="font-bold text-base text-slate-100 tracking-tight">PrintLabel</span>
+      </a>
+
+      <!-- Nav links -->
+      <nav class="hidden sm:flex items-center gap-1">
+        <a href="/packing-lists/instant" class="nav-link <%= active === 'instant' ? 'active' : '' %>">
+          <svg class="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+            <path stroke-linecap="round" stroke-linejoin="round" d="M17 17h2a2 2 0 002-2v-4a2 2 0 00-2-2H5a2 2 0 00-2 2v4a2 2 0 002 2h2m2 4h6a2 2 0 002-2v-4a2 2 0 00-2-2H9a2 2 0 00-2 2v4a2 2 0 002 2zm8-12V5a2 2 0 00-2-2H9a2 2 0 00-2 2v4h10z" />
+          </svg>
+          <%= __('nav_instant') %>
+        </a>
+      </nav>
+ 
+      <!-- User info + logout -->
+      <div class="flex items-center gap-2">
+        <!-- Language Toggle -->
+        <div class="flex items-center gap-0.5 px-1.5 py-1 rounded-full bg-surface-800 border border-surface-700/50 mr-1 text-[11px]">
+          <a href="/change-lang/id" class="px-2 py-0.5 rounded-full font-bold transition-all <%= currentLang === 'id' ? 'bg-brand-500 text-white shadow-sm' : 'text-slate-400 hover:text-slate-200' %>">ID</a>
+          <a href="/change-lang/en" class="px-2 py-0.5 rounded-full font-bold transition-all <%= currentLang === 'en' ? 'bg-brand-500 text-white shadow-sm' : 'text-slate-400 hover:text-slate-200' %>">EN</a>
+        </div>
+
+        <% if (currentUser) { %>
+        <div class="hidden sm:flex items-center gap-2 px-3 py-1.5 rounded-full bg-surface-800/80 border border-surface-700/50">
+          <div class="w-6 h-6 rounded-full bg-gradient-to-br from-brand-500 to-brand-700 flex items-center justify-center flex-shrink-0">
+            <span class="text-[10px] font-bold text-white"><%= (currentUser.name || '').charAt(0).toUpperCase() %></span>
+          </div>
+          <span class="text-sm text-slate-300 font-medium max-w-[120px] truncate"><%= currentUser.name %></span>
+          <% if (currentUser.isAdmin) { %>
+          <span class="text-[10px] font-bold text-brand-400 uppercase tracking-wider"><%= __('badge_admin') %></span>
+          <% } %>
+        </div>
+        <a href="/logout" class="btn btn-secondary btn-sm">
+          <svg class="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+            <path stroke-linecap="round" stroke-linejoin="round" d="M17 16l4-4m0 0l-4-4m4 4H7m6 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h4a3 3 0 013 3v1" />
+          </svg>
+          <%= __('nav_logout') %>
+        </a>
+        <% } %>
+      </div>
+
+    </div>
+  </div>
+</header>
