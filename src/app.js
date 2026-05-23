@@ -93,8 +93,12 @@ app.use((err, req, res, next) => {
 
   if (!process.env.VERCEL) {
     // Ensure uploads directory exists (local/PM2 only)
-    const uploadDir = path.join(__dirname, '../uploads');
-    if (!fs.existsSync(uploadDir)) fs.mkdirSync(uploadDir, { recursive: true });
+    try {
+      const uploadDir = path.join(__dirname, '../uploads');
+      if (!fs.existsSync(uploadDir)) fs.mkdirSync(uploadDir, { recursive: true });
+    } catch (err) {
+      console.warn(`⚠️ Warning: Could not create uploads directory at startup: ${err.message}`);
+    }
 
     app.listen(PORT, () => {
       console.log(`\n🚀  PrintLabel server running at http://localhost:${PORT}`);

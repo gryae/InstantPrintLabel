@@ -8,9 +8,17 @@ const ctrl     = require('../controllers/packingListController');
 const { requireLogin } = require('../middleware/auth');
 
 // ── Multer setup ──────────────────────────────────────────────────────────────
-// Vercel serverless environments have a read-only filesystem, except for /tmp
-const uploadDir = process.env.VERCEL ? '/tmp' : path.join(__dirname, '../../uploads');
-if (!fs.existsSync(uploadDir)) fs.mkdirSync(uploadDir, { recursive: true });
+// Vercel serverless environments have a read-only filesystem.
+// We use a try-catch block to fallback to /tmp automatically if directory creation fails.
+let uploadDir = path.join(__dirname, '../../uploads');
+try {
+  if (!fs.existsSync(uploadDir)) {
+    fs.mkdirSync(uploadDir, { recursive: true });
+  }
+} catch (err) {
+  console.warn(`⚠️ Warning: Could not create upload directory at ${uploadDir}: ${err.message}. Falling back to /tmp.`);
+  uploadDir = '/tmp';
+}
 
 const storage = multer.diskStorage({
   destination: (req, file, cb) => cb(null, uploadDir),
