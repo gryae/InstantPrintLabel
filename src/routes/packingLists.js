@@ -9,7 +9,7 @@ const { requireLogin } = require('../middleware/auth');
 
 // ── Multer setup ──────────────────────────────────────────────────────────────
 // Vercel serverless environments have a read-only filesystem.
-// We use a try-catch block to fallback to /tmp automatically if directory creation fails.
+// We fallback to /tmp automatically if directory creation fails.
 let uploadDir = path.join(__dirname, '../../uploads');
 try {
   if (!fs.existsSync(uploadDir)) {
@@ -49,22 +49,17 @@ const upload = multer({
 });
 
 // ── Routes ────────────────────────────────────────────────────────────────────
-router.get('/',                       requireLogin, ctrl.index);
-router.get('/upload',                 requireLogin, ctrl.showUpload);
-router.post('/upload',                requireLogin, upload.single('packingListFile'), ctrl.handleUpload);
-router.get('/instant',                requireLogin, ctrl.showInstant);
-router.post('/instant',               requireLogin, upload.single('packingListFile'), ctrl.handleInstant);
-router.get('/:id',                    requireLogin, ctrl.showDetail);
-router.get('/:id/print',              requireLogin, ctrl.showPrintForm);
-router.post('/:id/print',             requireLogin, ctrl.handlePrint);
-router.post('/:id/delete',            requireLogin, ctrl.handleDelete);
+// Root redirect → instant
+router.get('/', requireLogin, (req, res) => res.redirect('/packing-lists/instant'));
+
+router.get('/instant',  requireLogin, ctrl.showInstant);
+router.post('/instant', requireLogin, upload.single('packingListFile'), ctrl.handleInstant);
 
 // Multer error handler
 router.use((err, req, res, next) => {
   if (err instanceof multer.MulterError) {
     req.flash('error', err.message);
-    const dest = req.path.includes('instant') ? '/packing-lists/instant' : '/packing-lists/upload';
-    return res.redirect(dest);
+    return res.redirect('/packing-lists/instant');
   }
   next(err);
 });

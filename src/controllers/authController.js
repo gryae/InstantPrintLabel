@@ -1,6 +1,12 @@
 'use strict';
-const bcrypt  = require('bcryptjs');
-const { pool } = require('../database/db');
+
+/**
+ * Auth controller — stateless (no database).
+ * Login validates checker name + fixed password from env/config.
+ * User identity is stored in the session only.
+ */
+
+const LOGIN_PASSWORD = process.env.LOGIN_PASSWORD || 'password123';
 
 async function showLogin(req, res) {
   res.render('auth/login', {
@@ -14,14 +20,14 @@ async function showLogin(req, res) {
 
 async function handleLogin(req, res) {
   const checkerName = (req.body.checkerName || '').trim();
-  const password = req.body.password;
+  const password    = req.body.password;
 
   if (!checkerName || !password) {
     req.flash('error', 'Nama Checker dan password wajib diisi.');
     return res.redirect('/login');
   }
 
-  if (password !== 'password123') {
+  if (password !== LOGIN_PASSWORD) {
     req.flash('error', 'Password salah.');
     return res.redirect('/login');
   }
@@ -39,10 +45,8 @@ async function handleLogin(req, res) {
 }
 
 function handleLogout(req, res) {
-  req.session.destroy((err) => {
-    if (err) console.error('Session destroy error:', err);
-    res.redirect('/login');
-  });
+  req.session = null; // cookie-session: set to null to clear
+  res.redirect('/login');
 }
 
 module.exports = { showLogin, handleLogin, handleLogout };

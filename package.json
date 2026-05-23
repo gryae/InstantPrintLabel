@@ -1,7 +1,7 @@
 {
   "name": "print-label",
   "version": "1.0.0",
-  "description": "Packing label generator and printer from Excel packing list files",
+  "description": "Instant packing label generator and printer from Excel files",
   "main": "src/app.js",
   "scripts": {
     "dev": "nodemon src/app.js",
@@ -11,17 +11,13 @@
     "watch:css": "tailwindcss -i ./src/input.css -o ./public/css/styles.css --watch"
   },
   "dependencies": {
-    "bcryptjs": "^2.4.3",
     "connect-flash": "^0.1.1",
     "cookie-session": "^2.1.1",
     "dotenv": "^16.4.5",
     "ejs": "^3.1.10",
     "exceljs": "^4.4.0",
     "express": "^4.19.2",
-    "express-session": "^1.18.0",
-    "method-override": "^3.0.0",
     "multer": "^2.1.1",
-    "mysql2": "^3.9.7",
     "pako": "^1.0.11"
   },
   "devDependencies": {
