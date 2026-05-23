@@ -131,14 +131,27 @@ function buildLabels(dbItems, customerName, checkerName, resetBoxPerDo = false) 
     for (let pageIdx = 0; pageIdx < pageCount; pageIdx++) {
       const pageEntries = entries.slice(pageIdx * ITEMS_PER_LABEL, (pageIdx + 1) * ITEMS_PER_LABEL);
       const partSuffix = pageCount > 1 ? ` (${pageIdx + 1}/${pageCount})` : '';
-      // Header: pakai "," sebagai pemisah customer dan NO BOX (bukan "/")
-      // Format dengan NO DO: header tetap "CUSTOMER , NO BOX Y", footer tampilkan NO DO/BOX info
-      const headerText = `${customerName.toUpperCase()} , NO BOX ${boxNo}${partSuffix}`;
+
+      // Header logic berdasarkan format:
+      // Format 1 (no noDo)           → "CUSTOMER , NO BOX X"
+      // Format 2 (noDo, no BOX col)  → "CUSTOMER , NO DO : XXXX , NO BOX X"
+      // Format 3 (noDo + BOX col)    → "CUSTOMER , NO BOX X"  (NO DO/BOX di footer)
+      let headerText;
+      if (isFormat3) {
+        // Format 3: header hanya NO BOX, detail NO DO/BOX tampil di footer
+        headerText = `${customerName.toUpperCase()} , NO BOX ${boxNo}${partSuffix}`;
+      } else if (noDo) {
+        // Format 2: NO DO masuk ke header
+        headerText = `${customerName.toUpperCase()} , NO DO : ${noDo} , NO BOX ${boxNo}${partSuffix}`;
+      } else {
+        // Format 1: hanya customer dan NO BOX
+        headerText = `${customerName.toUpperCase()} , NO BOX ${boxNo}${partSuffix}`;
+      }
 
       labels.push({
         boxNo,
-        // noDo hanya di-set untuk Format 3 (ada kolom BOX terpisah)
-        // Format 2 (NO DO + NO BOX tanpa kolom BOX): footer tidak tampil
+        // noDo hanya di-set untuk Format 3 (supaya footer NO DO/BOX tampil)
+        // Format 1 & 2 tidak perlu footer tambahan
         noDo: isFormat3 ? (noDo || null) : null,
         customerName: customerName.toUpperCase(),
         checkerName,
