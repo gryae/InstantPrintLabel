@@ -47,15 +47,19 @@ async function handleInstant(req, res) {
       return res.redirect('/packing-lists/instant');
     }
 
-    // Detect format automatically:
-    //   Format 3 → has separate BOX column (boxRaw) → group per DO
-    //   Format 2 → has noDo but no boxRaw → group globally
-    //   Format 1 → no noDo, no boxRaw → group globally
-    const hasBoxColumn = items.some(item => item.boxRaw !== null && item.boxRaw !== undefined && item.boxRaw !== '');
-    const hasNoDo      = items.some(item => item.noDo);
-    const resetPerDo   = hasBoxColumn || hasNoDo;
+    // Support explicit format selection from UI, or auto-detect
+    const selectedFormat = req.body.labelFormat || 'auto';
+    const hasBoxColumn   = items.some(item => item.boxRaw !== null && item.boxRaw !== undefined && item.boxRaw !== '');
+    const hasNoDo        = items.some(item => item.noDo);
+    
+    let resetPerDo = hasBoxColumn || hasNoDo;
+    if (selectedFormat === 'format2' || selectedFormat === 'format3') {
+      resetPerDo = true;
+    } else if (selectedFormat === 'format1') {
+      resetPerDo = false;
+    }
 
-    const labels = buildLabels(items, customerName, checkerName, resetPerDo);
+    const labels = buildLabels(items, customerName, checkerName, resetPerDo, selectedFormat);
 
     // Clean up temp file immediately
     if (fs.existsSync(filePath)) fs.unlinkSync(filePath);

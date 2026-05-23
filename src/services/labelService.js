@@ -93,47 +93,78 @@ function groupItemsByBox(items, resetBoxPerDo = false) {
  * Build a flat list of labels from packing list items.
  * Each label represents one box with all its items and quantities.
  *
- * Header logic:
- *   Format 1 (no NO DO, no BOX col) → "CUSTOMER , NO BOX X"
- *   Format 2 (has NO DO, no BOX col) → "CUSTOMER , NO DO/BOX : XXXX/X"
- *   Format 3 (has NO DO + BOX col)   → "CUSTOMER , NO BOX X" (global NO BOX)
- *                                       + footer: "NO DO / BOX : XXXX / X"
+ * Header/Footer logic:
+ *   Format 1: Header "CUSTOMER , NO BOX X" (No DO/BOX footer)
+ *   Format 2: Header "CUSTOMER , NO DO/BOX : XXXX/X" (No separate footer)
+ *   Format 3: Header "CUSTOMER , NO BOX X" (Global box seq)
+ *             + Footer: "NO DO / BOX : XXXX / X" (Per-DO box number)
  *
  * @param {Object[]} items
  * @param {string}   customerName
  * @param {string}   checkerName
  * @param {boolean}  resetBoxPerDo
+ * @param {string}   selectedFormat  'auto', 'format1', 'format2', 'format3'
  * @returns {Array<LabelData>}
  *
  * @typedef {Object} LabelData
- * @property {number}   boxNo
- * @property {number|null} noBoxNo    Global NO BOX number (Format 3 only)
- * @property {string|null} noDo       e.g. "5993" — only set for Format 3 (triggers footer)
+ * @property {number}   boxNo         Per-DO box number
+ * @property {number}   globalBoxNo   Global sequential box number
+ * @property {string|null} noDo       e.g. "5993"
  * @property {string}   customerName
  * @property {string}   checkerName
  * @property {string}   headerText
  * @property {number}   weightKg
  * @property {Object[]} lineItems
  */
-function buildLabels(items, customerName, checkerName, resetBoxPerDo = false) {
+function buildLabels(items, customerName, checkerName, resetBoxPerDo = false, selectedFormat = 'auto') {
   const boxMap = groupItemsByBox(items, resetBoxPerDo);
   const labels = [];
   const ITEMS_PER_LABEL = 15;
 
-  for (const [key, entries] of boxMap) {
-    const boxNo   = entries[0].boxNo;
-    // noBoxNo: global NO BOX number for Format 3 (from NO BOX column)
-    const noBoxNo = entries[0].noBoxNo; // null for Format 1/2
+  // Detect or use selected format
+  const hasNoDo = items.some(item => item.noDo !== null && item.noDo !== undefined && item.noDo !== '');
+  
+  let format = 'format1';
+  if (hasNoDo) {
+    if (selectedFormat === 'format2') {
+      format = 'format2';
+    } else if (selectedFormat === 'format3') {
+      format = 'format3';
+    } else {
+      // Auto-detect Format 2 vs Format 3 by checking if box numbers reset per-DO
+      let isResetting = false;
+      let maxBox = 0;
+      let lastNoDo = null;
+      
+      for (const item of items) {
+        if (!item.noDo) continue;
+        const boxes = parseBoxRange(item.noBoxRaw);
+        for (const b of boxes) {
+          if (lastNoDo && lastNoDo !== item.noDo) {
+            // If the box number resets to 1, or is smaller than the max seen, it resets!
+            if (b <= maxBox && b === 1) {
+              isResetting = true;
+              break;
+            }
+          }
+          lastNoDo = item.noDo;
+          maxBox = Math.max(maxBox, b);
+        }
+        if (isResetting) break;
+      }
+      
+      format = isResetting ? 'format3' : 'format2';
+    }
+  }
 
-    let noDo      = null;
-    let isFormat3 = false;
+  let globalBoxSeq = 1;
+
+  for (const [key, entries] of boxMap) {
+    const boxNo = entries[0].boxNo;
+    let noDo = null;
 
     for (const entry of entries) {
-      const itemNoDo   = entry.item.no_do    !== undefined ? entry.item.no_do    : entry.item.noDo;
-      const itemBoxRaw = entry.item.box_raw  !== undefined ? entry.item.box_raw  : entry.item.boxRaw;
-      if (itemBoxRaw !== null && itemBoxRaw !== undefined && itemBoxRaw !== '') {
-        isFormat3 = true;
-      }
+      const itemNoDo = entry.item.no_do !== undefined ? entry.item.no_do : entry.item.noDo;
       if (itemNoDo && !noDo) {
         noDo = itemNoDo;
       }
@@ -152,24 +183,24 @@ function buildLabels(items, customerName, checkerName, resetBoxPerDo = false) {
       const partSuffix  = pageCount > 1 ? ` (${pageIdx + 1}/${pageCount})` : '';
 
       let headerText;
-      if (isFormat3) {
-        // Format 3: header pakai NO BOX (global seq dari kolom NO BOX)
-        //           footer akan tampilkan NO DO / BOX : noDo / boxNo
-        const displayNoBox = noBoxNo !== null && noBoxNo !== undefined ? noBoxNo : boxNo;
-        headerText = `${customerName.toUpperCase()} , NO BOX ${displayNoBox}${partSuffix}`;
-      } else if (noDo) {
-        // Format 2: NO DO dan NO BOX masuk ke header sebagai "NO DO/BOX : X/Y"
-        headerText = `${customerName.toUpperCase()} , NO DO/BOX : ${noDo}/${boxNo}${partSuffix}`;
+      let labelNoDo = null;
+
+      if (format === 'format3') {
+        // Format 3: Header is global box seq, footer is NO DO / BOX : DO / per-DO box number
+        headerText = `${customerName.toUpperCase()} , NO BOX ${globalBoxSeq}${partSuffix}`;
+        labelNoDo = noDo || null;
+      } else if (format === 'format2') {
+        // Format 2: Header contains DO and BOX
+        headerText = `${customerName.toUpperCase()} , NO DO/BOX : ${noDo || ''}/${boxNo}${partSuffix}`;
       } else {
-        // Format 1: hanya customer dan NO BOX
+        // Format 1: Header contains CUSTOMER, NO BOX boxNo
         headerText = `${customerName.toUpperCase()} , NO BOX ${boxNo}${partSuffix}`;
       }
 
       labels.push({
         boxNo,
-        noBoxNo: noBoxNo || null,
-        // noDo hanya di-set untuk Format 3 → memicu tampilnya footer "NO DO / BOX"
-        noDo: isFormat3 ? (noDo || null) : null,
+        globalBoxNo: globalBoxSeq,
+        noDo: labelNoDo,
         customerName: customerName.toUpperCase(),
         checkerName,
         headerText,
@@ -181,6 +212,8 @@ function buildLabels(items, customerName, checkerName, resetBoxPerDo = false) {
         })),
       });
     }
+
+    globalBoxSeq++;
   }
 
   return labels;
