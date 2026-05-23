@@ -1,21 +1,22 @@
 'use strict';
 require('dotenv').config();
 
-const express        = require('express');
-const session        = require('express-session');
-const flash          = require('connect-flash');
+const express = require('express');
+// const session        = require('express-session');
+const session = require('cookie-session');
+const flash = require('connect-flash');
 const methodOverride = require('method-override');
-const path           = require('path');
-const fs             = require('fs');
+const path = require('path');
+const fs = require('fs');
 
 const { testConnection } = require('./database/db');
-const { translate }      = require('./utils/i18n');
-const authRoutes         = require('./routes/auth');
-const packingListRoutes  = require('./routes/packingLists');
-const labelRoutes        = require('./routes/labels');
-const userRoutes         = require('./routes/users');
+const { translate } = require('./utils/i18n');
+const authRoutes = require('./routes/auth');
+const packingListRoutes = require('./routes/packingLists');
+const labelRoutes = require('./routes/labels');
+const userRoutes = require('./routes/users');
 
-const app  = express();
+const app = express();
 const PORT = process.env.PORT || 3000;
 
 // ── View engine ───────────────────────────────────────────────────────────────
@@ -33,15 +34,24 @@ app.use(express.json({ limit: '10mb' }));
 app.use(methodOverride('_method'));
 
 // ── Session ───────────────────────────────────────────────────────────────────
+// app.use(session({
+//   secret: process.env.SESSION_SECRET || 'dev_secret_change_me',
+//   resave: false,
+//   saveUninitialized: false,
+//   cookie: {
+//     httpOnly: true,
+//     secure: process.env.NODE_ENV === 'production',
+//     maxAge: 8 * 60 * 60 * 1000, // 8 hours
+//   },
+// }));
+
 app.use(session({
-  secret:            process.env.SESSION_SECRET || 'dev_secret_change_me',
-  resave:            false,
-  saveUninitialized: false,
-  cookie: {
-    httpOnly: true,
-    secure:   process.env.NODE_ENV === 'production',
-    maxAge:   8 * 60 * 60 * 1000, // 8 hours
-  },
+  name: 'session',
+  keys: [process.env.SESSION_SECRET || 'dev_secret_change_me'],
+  maxAge: 8 * 60 * 60 * 1000,
+  secure: process.env.NODE_ENV === 'production',
+  httpOnly: true,
+  sameSite: 'lax',
 }));
 
 // ── Flash messages ────────────────────────────────────────────────────────────
@@ -51,9 +61,9 @@ app.use(flash());
 app.use((req, res, next) => {
   const currentLang = (req.session && req.session.lang) ? req.session.lang : 'id';
   res.locals.currentUser = req.session.user || null;
-  res.locals.appName     = 'PrintLabel';
+  res.locals.appName = 'PrintLabel';
   res.locals.currentLang = currentLang;
-  res.locals.__          = (key, ...args) => translate(currentLang, key, ...args);
+  res.locals.__ = (key, ...args) => translate(currentLang, key, ...args);
   next();
 });
 
@@ -63,15 +73,15 @@ app.get('/', (req, res) => {
   res.redirect('/login');
 });
 
-app.use('/',              authRoutes);
+app.use('/', authRoutes);
 app.use('/packing-lists', packingListRoutes);
-app.use('/labels',        labelRoutes);
-app.use('/users',         userRoutes);
+app.use('/labels', labelRoutes);
+app.use('/users', userRoutes);
 
 // ── 404 handler ───────────────────────────────────────────────────────────────
 app.use((req, res) => {
   res.status(404).render('error', {
-    title:   '404 — Not Found',
+    title: '404 — Not Found',
     message: `The page "${req.path}" was not found.`,
   });
 });
@@ -81,7 +91,7 @@ app.use((err, req, res, next) => {
   console.error('Unhandled error:', err);
   const status = err.status || 500;
   res.status(status).render('error', {
-    title:   `${status} — Error`,
+    title: `${status} — Error`,
     message: process.env.NODE_ENV === 'development' ? err.message : 'An internal error occurred.',
   });
 });
