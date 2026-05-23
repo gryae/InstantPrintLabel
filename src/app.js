@@ -18,6 +18,7 @@ const userRoutes = require('./routes/users');
 
 const app = express();
 const PORT = process.env.PORT || 3000;
+app.set('trust proxy', 1);
 
 // ── View engine ───────────────────────────────────────────────────────────────
 app.set('view engine', 'ejs');
