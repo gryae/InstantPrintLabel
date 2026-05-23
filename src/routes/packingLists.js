@@ -8,7 +8,8 @@ const ctrl     = require('../controllers/packingListController');
 const { requireLogin } = require('../middleware/auth');
 
 // ── Multer setup ──────────────────────────────────────────────────────────────
-const uploadDir = path.join(__dirname, '../../uploads');
+// Vercel serverless environments have a read-only filesystem, except for /tmp
+const uploadDir = process.env.VERCEL ? '/tmp' : path.join(__dirname, '../../uploads');
 if (!fs.existsSync(uploadDir)) fs.mkdirSync(uploadDir, { recursive: true });
 
 const storage = multer.diskStorage({

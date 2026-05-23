@@ -91,12 +91,16 @@ app.use((err, req, res, next) => {
   // Database connection is bypassed in this simplified stateless setup
   // await testConnection();
 
-  // Ensure uploads directory exists
-  const uploadDir = path.join(__dirname, '../uploads');
-  if (!fs.existsSync(uploadDir)) fs.mkdirSync(uploadDir, { recursive: true });
+  if (!process.env.VERCEL) {
+    // Ensure uploads directory exists (local/PM2 only)
+    const uploadDir = path.join(__dirname, '../uploads');
+    if (!fs.existsSync(uploadDir)) fs.mkdirSync(uploadDir, { recursive: true });
 
-  app.listen(PORT, () => {
-    console.log(`\n🚀  PrintLabel server running at http://localhost:${PORT}`);
-    console.log(`📋  Environment: ${process.env.NODE_ENV || 'development'}\n`);
-  });
+    app.listen(PORT, () => {
+      console.log(`\n🚀  PrintLabel server running at http://localhost:${PORT}`);
+      console.log(`📋  Environment: ${process.env.NODE_ENV || 'development'}\n`);
+    });
+  }
 })();
+
+module.exports = app;
