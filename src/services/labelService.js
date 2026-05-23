@@ -41,11 +41,18 @@ function groupItemsByBox(items, resetBoxPerDo = false) {
   const boxMap = new Map();
 
   for (const item of items) {
-    // DB mengembalikan snake_case: no_box_raw, weight_kg, qty_of_box, dll.
+    // DB mengembalikan snake_case: no_box_raw, box_raw, weight_kg, qty_of_box, dll.
     // Dukung keduanya (camelCase dari parser dan snake_case dari DB)
     const noBoxRaw = item.no_box_raw !== undefined ? item.no_box_raw : item.noBoxRaw;
-    const itemNoDo = item.no_do !== undefined ? item.no_do : item.noDo;
-    const splits = splitQtyAcrossBoxes(item.qty, noBoxRaw);
+    const boxRaw   = item.box_raw    !== undefined ? item.box_raw    : item.boxRaw;    // Format 3 only
+    const itemNoDo = item.no_do      !== undefined ? item.no_do      : item.noDo;
+
+    // Format 3: ada kolom BOX terpisah → pakai boxRaw untuk split/group
+    // Format 1/2: tidak ada kolom BOX → pakai noBoxRaw
+    const splitRaw = (boxRaw !== null && boxRaw !== undefined && boxRaw !== '')
+      ? boxRaw
+      : noBoxRaw;
+    const splits = splitQtyAcrossBoxes(item.qty, splitRaw);
 
     for (const { boxNo, qtyInBox } of splits) {
       const key = (resetBoxPerDo && itemNoDo) ? `${itemNoDo}_${boxNo}` : `global_${boxNo}`;
@@ -100,11 +107,16 @@ function buildLabels(dbItems, customerName, checkerName, resetBoxPerDo = false) 
   for (const [key, entries] of boxMap) {
     const boxNo = entries[0].boxNo;
     let noDo = null;
+    let isFormat3 = false;
     for (const entry of entries) {
-      const itemNoDo = entry.item.no_do !== undefined ? entry.item.no_do : entry.item.noDo;
-      if (itemNoDo) {
+      const itemNoDo  = entry.item.no_do    !== undefined ? entry.item.no_do    : entry.item.noDo;
+      const itemBoxRaw = entry.item.box_raw !== undefined ? entry.item.box_raw  : entry.item.boxRaw;
+      // Format 3: ada kolom BOX terpisah → tampilkan footer NO DO/BOX
+      if (itemBoxRaw !== null && itemBoxRaw !== undefined && itemBoxRaw !== '') {
+        isFormat3 = true;
+      }
+      if (itemNoDo && !noDo) {
         noDo = itemNoDo;
-        break;
       }
     }
 
@@ -125,7 +137,9 @@ function buildLabels(dbItems, customerName, checkerName, resetBoxPerDo = false) 
 
       labels.push({
         boxNo,
-        noDo: noDo || null,
+        // noDo hanya di-set untuk Format 3 (ada kolom BOX terpisah)
+        // Format 2 (NO DO + NO BOX tanpa kolom BOX): footer tidak tampil
+        noDo: isFormat3 ? (noDo || null) : null,
         customerName: customerName.toUpperCase(),
         checkerName,
         headerText,

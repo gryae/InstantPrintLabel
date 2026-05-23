@@ -14,8 +14,9 @@ const EXPECTED_HEADERS = {
   description: ['desc', 'description'],
   qty:         ['qty', 'quantity'],
   noDo:        ['no do', 'no.do', 'no_do', 'nodo'],
-  // 'box' adalah exact-only alias untuk format 3 (kolom "BOX" terpisah)
-  noBox:       ['no box', 'no.box', 'no_box', 'nobox', 'box'],
+  // Format 3: kolom BOX (per-DO box number) terpisah dari NO BOX (global seq)
+  box:         ['box'],
+  noBox:       ['no box', 'no.box', 'no_box', 'nobox'],
   qtyOfBox:    ['qty of box', 'qty_of_box', 'qtyofbox', 'qty box'],
   pCm:         ['p(cm)', 'p (cm)', 'p cm'],
   lCm:         ['l(cm)', 'l (cm)', 'l cm'],
@@ -164,7 +165,8 @@ function parseBoxRange(raw) {
  * @property {string}  code
  * @property {string}  description
  * @property {number}  qty
- * @property {string}  noBoxRaw       e.g. "1-3" or "5"
+ * @property {string}  noBoxRaw       e.g. "1-3" or "5" (from NO BOX column)
+ * @property {string}  boxRaw         e.g. "1-3" or "4" (from BOX column, Format 3 only)
  * @property {number}  qtyOfBox
  * @property {number}  pCm
  * @property {number}  lCm
@@ -200,6 +202,7 @@ async function parsePackingList(filePath) {
   // State for merging: track the last non-null values for merged columns
   const mergedState = {
     noDo:        null,
+    box:         null,   // Format 3: per-DO box number
     noBox:       null,
     qtyOfBox:    null,
     pCm:         null,
@@ -225,6 +228,7 @@ async function parsePackingList(filePath) {
 
     // For merged columns: read value, and if non-null update the running state
     const rawNoDo       = getVal('noDo');
+    const rawBox        = getVal('box');    // Format 3 only (BOX column)
     const rawNoBox      = getVal('noBox');
     const rawQtyOfBox   = getVal('qtyOfBox');
     const rawPCm        = getVal('pCm');
@@ -237,6 +241,7 @@ async function parsePackingList(filePath) {
     const rawTotalWeight = getVal('totalWeight');
 
     if (rawNoDo       !== null && rawNoDo       !== '') mergedState.noDo       = rawNoDo;
+    if (rawBox        !== null && rawBox        !== '') mergedState.box        = rawBox;
     if (rawNoBox      !== null && rawNoBox      !== '') mergedState.noBox      = rawNoBox;
     if (rawQtyOfBox   !== null && rawQtyOfBox   !== '') mergedState.qtyOfBox   = rawQtyOfBox;
     if (rawPCm        !== null && rawPCm        !== '') mergedState.pCm        = rawPCm;
@@ -247,7 +252,10 @@ async function parsePackingList(filePath) {
     if (rawTotalWeight !== null && rawTotalWeight !== '') mergedState.totalWeight = rawTotalWeight;
 
     const noBoxRaw = mergedState.noBox !== null ? String(mergedState.noBox).trim() : '';
-    const boxes    = parseBoxRange(noBoxRaw);
+    const boxRaw   = mergedState.box   !== null ? String(mergedState.box).trim()   : null;
+    // For grouping/splitting: Format 3 uses BOX column, others use NO BOX
+    const splitRaw = boxRaw !== null ? boxRaw : noBoxRaw;
+    const boxes    = parseBoxRange(splitRaw);
     const qtyNum   = parseInt(qty) || 0;
 
     items.push({
@@ -255,6 +263,7 @@ async function parsePackingList(filePath) {
       description:  description ? String(description).trim() : '',
       qty:          qtyNum,
       noDo:         mergedState.noDo !== null ? String(mergedState.noDo).trim() : null,
+      boxRaw:       boxRaw,   // null if Format 1/2
       noBoxRaw:     noBoxRaw,
       qtyOfBox:     parseInt(mergedState.qtyOfBox) || (boxes.length || 1),
       pCm:          parseFloat(mergedState.pCm)        || 0,

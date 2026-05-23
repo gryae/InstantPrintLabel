@@ -49,6 +49,7 @@ CREATE TABLE IF NOT EXISTS packing_list_items (
   description       TEXT,
   qty               INT            DEFAULT 0,
   no_do             VARCHAR(100)   DEFAULT NULL,
+  box_raw           VARCHAR(50)    DEFAULT NULL COMMENT 'Format 3: per-DO box (BOX column)',
   no_box_raw        VARCHAR(50),
   qty_of_box        INT            DEFAULT 1,
   p_cm              DECIMAL(10,2)  DEFAULT 0,

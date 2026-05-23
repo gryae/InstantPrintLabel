@@ -24,7 +24,7 @@ async function insertPackingListItems(packingListId, items) {
   if (!items.length) return;
 
   const placeholders = items.map(() =>
-    '(?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)'
+    '(?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)'
   ).join(', ');
 
   const values = [];
@@ -35,6 +35,7 @@ async function insertPackingListItems(packingListId, items) {
       item.description,
       item.qty,
       item.noDo,
+      item.boxRaw   !== undefined ? item.boxRaw   : null,  // Format 3 only
       item.noBoxRaw,
       item.qtyOfBox,
       item.pCm,
@@ -48,7 +49,7 @@ async function insertPackingListItems(packingListId, items) {
 
   await pool.execute(
     `INSERT INTO packing_list_items
-       (packing_list_id, code, description, qty, no_do, no_box_raw, qty_of_box,
+       (packing_list_id, code, description, qty, no_do, box_raw, no_box_raw, qty_of_box,
         p_cm, l_cm, t_cm, volume_m3, weight_kg, total_weight)
      VALUES ${placeholders}`,
     values
