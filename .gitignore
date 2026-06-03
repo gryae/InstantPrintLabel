@@ -6,3 +6,8 @@ npm-debug.log*
 .DS_Store
 Thumbs.db
 public/css/styles.css
+
+# exe-build binaries (large files, no need in git)
+exe-build/dist/
+exe-build/*.zip
+exe-build/*.exe
