@@ -145,7 +145,11 @@ function buildLabels(items, customerName, checkerName, resetBoxPerDo = false, se
   let globalBoxSeq = 1;
 
   for (const [key, entries] of boxMap) {
-    const boxNo = entries[0].boxNo;
+    const boxNo   = entries[0].boxNo;
+    // noBoxNo: nilai dari kolom NO BOX di Excel (untuk Format 3 header)
+    const noBoxNo = entries[0].noBoxNo !== null && entries[0].noBoxNo !== undefined
+      ? entries[0].noBoxNo
+      : null;
     let noDo = null;
 
     for (const entry of entries) {
@@ -171,8 +175,10 @@ function buildLabels(items, customerName, checkerName, resetBoxPerDo = false, se
       let labelNoDo = null;
 
       if (format === 'format3') {
-        // Format 3: Header is global box seq, footer is NO DO / BOX : DO / per-DO box number
-        headerText = `${customerName.toUpperCase()} , NO BOX ${globalBoxSeq}${partSuffix}`;
+        // Format 3: Header pakai NO BOX dari kolom NO BOX di Excel
+        // Fallback ke globalBoxSeq kalau kolom NO BOX tidak ada nilainya
+        const displayNoBox = noBoxNo !== null ? noBoxNo : globalBoxSeq;
+        headerText = `${customerName.toUpperCase()} , NO BOX ${displayNoBox}${partSuffix}`;
         labelNoDo = noDo || null;
       } else if (format === 'format2') {
         // Format 2: Header → CUSTOMER , NO DO / BOX : {DO} / {box}

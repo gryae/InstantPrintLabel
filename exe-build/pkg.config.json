@@ -1,0 +1,13 @@
+{
+  "targets": ["node18-win-x64"],
+  "outputPath": "exe-build/dist",
+  "assets": [
+    "src/views/**/*",
+    "src/utils/**/*",
+    "src/parsers/**/*",
+    "public/**/*"
+  ],
+  "scripts": [
+    "src/**/*.js"
+  ]
+}

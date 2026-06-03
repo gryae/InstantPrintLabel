@@ -10,7 +10,9 @@ const { requireLogin } = require('../middleware/auth');
 // ── Multer setup ──────────────────────────────────────────────────────────────
 // Vercel serverless environments have a read-only filesystem.
 // We fallback to /tmp automatically if directory creation fails.
-let uploadDir = path.join(__dirname, '../../uploads');
+// In exe mode (pkg), UPLOAD_RESOLVED points to a real writable folder next to the .exe.
+// On Vercel / local dev this env var is never set, so behaviour is unchanged.
+let uploadDir = process.env.UPLOAD_RESOLVED || path.join(__dirname, '../../uploads');
 try {
   if (!fs.existsSync(uploadDir)) {
     fs.mkdirSync(uploadDir, { recursive: true });

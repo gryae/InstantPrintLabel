@@ -1,0 +1,25 @@
+{
+  "name": "printlabel-exe-build",
+  "version": "1.0.0",
+  "description": "Build pipeline to package PrintLabel as a Windows .exe using pkg",
+  "main": "launcher.js",
+  "scripts": {
+    "build": "node build.js",
+    "build:exe": "pkg launcher.js --targets node18-win-x64 --output dist/PrintLabel.exe --config pkg.config.json",
+    "clean": "if exist dist rmdir /s /q dist"
+  },
+  "devDependencies": {
+    "pkg": "^5.8.1"
+  },
+  "pkg": {
+    "assets": [
+      "../src/views/**/*",
+      "../public/**/*",
+      "../src/utils/**/*",
+      "../src/parsers/**/*"
+    ],
+    "scripts": [
+      "../src/**/*.js"
+    ]
+  }
+}
