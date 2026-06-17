@@ -11,6 +11,7 @@
     "watch:css": "tailwindcss -i ./src/input.css -o ./public/css/styles.css --watch"
   },
   "dependencies": {
+    "@vercel/analytics": "^2.0.1",
     "connect-flash": "^0.1.1",
     "cookie-session": "^2.1.1",
     "dotenv": "^16.4.5",
